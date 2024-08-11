@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Card, CardContent, CardActions, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Card, CardContent, CardActions, IconButton, TextField } from '@mui/material';
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { styled } from '@mui/system';
+import axios from 'axios';
 
 import { useNavigate } from "react-router-dom";
 
@@ -38,6 +39,7 @@ function Home() {
   const [data, setData] = useState([]);
   const [currentCard, setCurrentCard] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [aiResponse, setAiResponse] = useState('');
 
   const navigate = useNavigate();
 
@@ -66,9 +68,23 @@ function Home() {
     navigate("/AddCard");
   };
 
-  const handleAskAI = () => {
-    // Placeholder for AI interaction
-    alert('Ask AI button clicked');
+  const handleAskAI = async () => {
+    const currentQuestion = data[currentCard].Question; // Get the current question
+    try {
+      const response = await axios({
+        url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyAlqtsqYFNCa1KLD8xSexO3VsjHp0kRHFI",
+        method: "post",
+        data: {
+          contents: [
+            { parts: [{ text: `${currentQuestion}. Give the output in 100 words` }] }
+          ]
+        }
+      });
+      const aiText = response.data.candidates[0].content.parts[0].text;
+      setAiResponse(aiText); // Update the state with AI response
+    } catch (error) {
+      console.error('Error fetching AI response:', error);
+    }
   };
 
   return (
@@ -143,6 +159,13 @@ function Home() {
         <Button variant="contained" color="primary" onClick={handleAskAI}>
           ASK AI
         </Button>
+        <TextField
+          multiline
+          rows={4}
+          value={aiResponse}
+          variant="outlined"
+          sx={{ marginTop: 2, width: '100%', maxWidth: 600 }}
+        />
 
       </Box>
 
