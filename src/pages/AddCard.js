@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import {
+  AppBar, Toolbar, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton,
+  Dialog, DialogActions, DialogContent, DialogTitle, TextField
+} from '@mui/material';
 import { Delete, Edit } from '@mui/icons-material';
+import axios from 'axios';
 
 const AddCard = () => {
   const [data, setData] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
-  const [editedQuestion, setEditedQuestion] = useState('');
-  const [editedAnswer, setEditedAnswer] = useState('');
+
+  const [values, setValues] = useState({
+    Question: '',
+    Answer: '',
+  });
 
   useEffect(() => {
     fetch('http://localhost:8081/data')
@@ -16,30 +24,79 @@ const AddCard = () => {
       .catch((err) => console.log(err));
   }, []);
 
-  const handleDelete = (id) => {
-    // Implement delete functionality here
-    console.log(`Delete card with id: ${id}`);
+  const handleDelete = (question) => {
+    axios.delete(`http://localhost:8081/data/${encodeURIComponent(question)}`)
+      .then(res => {
+        console.log(res);
+        setData(data.filter(item => item.Question !== question));
+      })
+      .catch(err => console.log(err));
+    console.log(`Delete card with question: ${question}`);
   };
 
-  const handleOpenDialog = (index) => {
+  const handleOpenEditDialog = (index) => {
     setEditIndex(index);
-    setEditedQuestion(data[index].Question);
-    setEditedAnswer(data[index].Answer);
-    setOpen(true);
+    setValues({
+      Question: data[index].Question,
+      Answer: data[index].Answer,
+    });
+    setEditOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpen(false);
+  const handleCloseEditDialog = () => {
+    setEditOpen(false);
     setEditIndex(null);
   };
 
-  const handleUpdate = () => {
-    // Implement update functionality here
-    const updatedData = [...data];
-    updatedData[editIndex] = { ...updatedData[editIndex], Question: editedQuestion, Answer: editedAnswer };
-    setData(updatedData);
-    handleCloseDialog();
-    console.log(`Update card at index: ${editIndex}`);
+  const handleUpdate = (event) => {
+    event.preventDefault();
+
+    const originalQuestion = data[editIndex].Question;
+
+    axios.put(`http://localhost:8081/data/${encodeURIComponent(originalQuestion)}`, values)
+      .then(res => {
+        console.log(res);
+
+        const updatedData = [...data];
+        updatedData[editIndex] = { ...values };
+        setData(updatedData);
+
+        handleCloseEditDialog();
+        console.log(`Updated card with original question: ${originalQuestion}`);
+      })
+      .catch(err => console.log(err));
+  };
+
+  const handleOpenAddDialog = () => {
+    setValues({
+      Question: '',
+      Answer: '',
+    });
+    setAddOpen(true);
+  };
+
+  const handleCloseAddDialog = () => {
+    setAddOpen(false);
+  };
+
+  const handleSubmitNewCard = (e) => {
+    e.preventDefault();
+    axios.post('http://localhost:8081/data', values)
+      .then(res => {
+        console.log(res);
+        setData([...data, values]);
+      })
+      .catch(err => console.log(err));
+    
+    handleCloseAddDialog();
+    console.log('Added new card:', values);
+  };
+
+  const handleValueChange = (e) => {
+    setValues({
+      ...values,
+      [e.target.name]: e.target.value,
+    });
   };
 
   return (
@@ -49,7 +106,7 @@ const AddCard = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Manage Flashcards
           </Typography>
-          <Button color="inherit">Add Card</Button>
+          <Button color="inherit" onClick={handleOpenAddDialog}>Add Card</Button>
         </Toolbar>
       </AppBar>
       <TableContainer component={Paper} sx={{ marginTop: 2 }}>
@@ -67,10 +124,10 @@ const AddCard = () => {
                 <TableCell>{item.Question}</TableCell>
                 <TableCell>{item.Answer}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleOpenDialog(index)} color="primary">
+                  <IconButton onClick={() => handleOpenEditDialog(index)} color="primary">
                     <Edit />
                   </IconButton>
-                  <IconButton onClick={() => handleDelete(index)} color="secondary">
+                  <IconButton onClick={() => handleDelete(item.Question)} color="secondary">
                     <Delete />
                   </IconButton>
                 </TableCell>
@@ -81,7 +138,7 @@ const AddCard = () => {
       </TableContainer>
 
       {/* Update Dialog */}
-      <Dialog open={open} onClose={handleCloseDialog}>
+      <Dialog open={editOpen} onClose={handleCloseEditDialog}>
         <DialogTitle>Update Flashcard</DialogTitle>
         <DialogContent>
           <TextField
@@ -90,21 +147,53 @@ const AddCard = () => {
             label="Question"
             fullWidth
             variant="outlined"
-            value={editedQuestion}
-            onChange={(e) => setEditedQuestion(e.target.value)}
+            name="Question"
+            value={values.Question}
+            onChange={handleValueChange}
           />
           <TextField
             margin="dense"
             label="Answer"
             fullWidth
             variant="outlined"
-            value={editedAnswer}
-            onChange={(e) => setEditedAnswer(e.target.value)}
+            name="Answer"
+            value={values.Answer}
+            onChange={handleValueChange}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={handleCloseEditDialog}>Cancel</Button>
           <Button onClick={handleUpdate}>Update</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add Card Dialog */}
+      <Dialog open={addOpen} onClose={handleCloseAddDialog}>
+        <DialogTitle>Add New Flashcard</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Question"
+            fullWidth
+            variant="outlined"
+            name="Question"
+            value={values.Question}
+            onChange={handleValueChange}
+          />
+          <TextField
+            margin="dense"
+            label="Answer"
+            fullWidth
+            variant="outlined"
+            name="Answer"
+            value={values.Answer}
+            onChange={handleValueChange}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseAddDialog}>Cancel</Button>
+          <Button onClick={handleSubmitNewCard}>Submit</Button>
         </DialogActions>
       </Dialog>
     </>

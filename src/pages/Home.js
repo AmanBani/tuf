@@ -3,6 +3,8 @@ import { AppBar, Toolbar, Typography, Button, Box, Card, CardContent, CardAction
 import { ArrowBack, ArrowForward } from '@mui/icons-material';
 import { styled } from '@mui/system';
 
+import { useNavigate } from "react-router-dom";
+
 // Styled component for the flip animation
 const FlipCard = styled(Box)(({ flipped }) => ({
   perspective: '1000px',
@@ -37,6 +39,8 @@ function Home() {
   const [currentCard, setCurrentCard] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetch('http://localhost:8081/data')
       .then((res) => res.json())
@@ -58,6 +62,15 @@ function Home() {
     setFlipped(!flipped);
   };
 
+  const handleEdit = () => {
+    navigate("/AddCard");
+  };
+
+  const handleAskAI = () => {
+    // Placeholder for AI interaction
+    alert('Ask AI button clicked');
+  };
+
   return (
     <>
       <AppBar position="static">
@@ -65,7 +78,7 @@ function Home() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Flashcards
           </Typography>
-          <Button color="inherit">Add Card</Button>
+          <Button color="inherit" onClick={handleEdit}>Edit Data</Button>
         </Toolbar>
       </AppBar>
       <Box
@@ -73,7 +86,21 @@ function Home() {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          height: '80vh',
+          height: '10vh',
+          marginTop: 2,
+          marginBottom: 4,
+        }}
+      >
+        <Typography variant="h4" component="div">
+          Answer Them
+        </Typography>
+      </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '70vh',
         }}
       >
         <IconButton onClick={handlePrevious} sx={{ mr: 2 }}>
@@ -112,7 +139,14 @@ function Home() {
         <IconButton onClick={handleNext} sx={{ ml: 2 }}>
           <ArrowForward />
         </IconButton>
+
+        <Button variant="contained" color="primary" onClick={handleAskAI}>
+          ASK AI
+        </Button>
+
       </Box>
+
+
     </>
   );
 }
